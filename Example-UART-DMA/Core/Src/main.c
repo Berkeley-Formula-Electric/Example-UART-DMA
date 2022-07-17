@@ -40,14 +40,16 @@
 
 /* Private variables ---------------------------------------------------------*/
  UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE BEGIN PV */
-uint8_t c;
+uint8_t buffer[128];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -55,16 +57,22 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart) {
+  if (huart == &huart2) {
+    // UART module receives data and starting DMA transfer
+  }
+}
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   if (huart == &huart2) {
-    if (c == '0') {
+    if (buffer[0] == '0') {
       HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
     }
-    else if (c == '1') {
+    else if (buffer[0] == '1') {
       HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
     }
-    HAL_UART_Transmit_IT(&huart2, &c, 1);
-    HAL_UART_Receive_IT(&huart2, &c, 1);
+    HAL_UART_Transmit_IT(&huart2, buffer, 1);
+    HAL_UART_Receive_DMA(&huart2, buffer, 1);
   }
 }
 /* USER CODE END 0 */
@@ -97,9 +105,10 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_IT(&huart2, &c, 1);
+  HAL_UART_Receive_DMA (&huart2, buffer, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -183,6 +192,22 @@ static void MX_USART2_UART_Init(void)
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Stream5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
 
 }
 
