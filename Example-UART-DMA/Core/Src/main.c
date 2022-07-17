@@ -31,6 +31,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define SERIAL_PACKET_LENGTH  11
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -43,7 +44,8 @@
 DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE BEGIN PV */
-uint8_t buffer[128];
+uint8_t buffer[SERIAL_PACKET_LENGTH];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -57,22 +59,17 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart) {
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size) {
   if (huart == &huart2) {
-    // UART module receives data and starting DMA transfer
-  }
-}
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-  if (huart == &huart2) {
-    if (buffer[0] == '0') {
-      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+    if (size == SERIAL_PACKET_LENGTH) {
+      // user code
+      {
+        char str[128];
+        sprintf(str, "rcv: %d %d\r\n", size, buffer[0]);
+        HAL_UART_Transmit_IT(&huart2, (uint8_t *)str, strlen(str));
+      }
     }
-    else if (buffer[0] == '1') {
-      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-    }
-    HAL_UART_Transmit_IT(&huart2, buffer, 1);
-    HAL_UART_Receive_DMA(&huart2, buffer, 1);
+    HAL_UARTEx_ReceiveToIdle_DMA(&huart2, buffer, SERIAL_PACKET_LENGTH);
   }
 }
 /* USER CODE END 0 */
@@ -108,7 +105,8 @@ int main(void)
   MX_DMA_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_DMA (&huart2, buffer, 1);
+  HAL_UARTEx_ReceiveToIdle_DMA(&huart2, buffer, SERIAL_PACKET_LENGTH);
+//  __HAL_DMA_DISABLE_IT(&hdma_usart2_rx, DMA_IT_HT);
   /* USER CODE END 2 */
 
   /* Infinite loop */
