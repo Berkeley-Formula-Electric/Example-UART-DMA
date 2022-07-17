@@ -63,7 +63,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     else if (c == '1') {
       HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
     }
-    HAL_UART_Transmit(&huart2, &c, 1, 10);
+    HAL_UART_Transmit_IT(&huart2, &c, 1);
+    HAL_UART_Receive_IT(&huart2, &c, 1);
   }
 }
 /* USER CODE END 0 */
@@ -98,7 +99,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_UART_Receive_IT(&huart2, &c, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -107,7 +108,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    HAL_StatusTypeDef status = HAL_UART_Receive_IT(&huart2, &c, 1);
   }
   /* USER CODE END 3 */
 }
